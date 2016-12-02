@@ -1,5 +1,5 @@
 import os
-from slap.api import Api
+from slap.api import TokenApi
 from slap.config import ConfigParser
 
 
@@ -13,7 +13,7 @@ class Publisher:
         if hostname:
             self.config['agsUrl'] = self.config_parser.update_hostname(self.config['agsUrl'], hostname)
 
-        self.api = Api(
+        self.api = TokenApi(
             ags_url=self.config['agsUrl'],
             token_url=self.config['tokenUrl'] if 'tokenUrl' in self.config else None,
             portal_url=self.config['portalUrl'] if 'portalUrl' in self.config else None,

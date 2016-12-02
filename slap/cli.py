@@ -57,7 +57,7 @@ def main():
             if "json" in publisher.config["site"]:
                 publisher.api.create_site(args.username, args.password, publisher.config["site"]["json"])
             else:
-                publisher.api.create_default_site()
+                publisher.api.create_default_site(args.username, args.password)
 
     print "Registering data sources..."
     publisher.register_data_sources()

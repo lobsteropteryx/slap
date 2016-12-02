@@ -1,28 +1,17 @@
 import requests
+from requests_kerberos import HTTPKerberosAuth
 import json
 
 
-class Api:
-
-    def __init__(self, ags_url, token_url, portal_url, username, password, verify_certs=False):
+class BaseApi(object):
+    def __init__(self, ags_url, portal_url, verify_certs=False):
         self._ags_url = ags_url
-        self._token_url = token_url if token_url else ags_url + '/generateToken'
         self._portal_url = portal_url
-        self._username = username
-        self._password = password
         self._verify_certs = verify_certs
-        self._token = None
-
-    @property
-    def token(self):
-        return self._token if self._token else self.get_token()
 
     @property
     def params(self):
-        return {
-            'token': self.token,
-            'f': 'json'
-        }
+        return {'f': 'json'}
 
     def post(self, url, params):
         return self._request(requests.post, url, params)
@@ -32,7 +21,10 @@ class Api:
 
     def _request(self, request_method, url, params):
         response = request_method(url, params=params, verify=False)
+        return self._check_response(response)
 
+    @staticmethod
+    def _check_response(response):
         if response.status_code != requests.codes.ok:
             response.raise_for_status()
 
@@ -41,18 +33,6 @@ class Api:
             raise requests.exceptions.RequestException(parsed_response['messages'][0])
 
         return parsed_response
-
-    def get_token(self):
-        params = {
-            'username': self._username,
-            'password': self._password,
-            'client': 'requestip',
-            'expiration': 60,
-            'f': 'json'
-        }
-        response = self.post(self._token_url, params)
-        self._token = response['token']
-        return self._token
 
     def get_service_params(self, service_name, folder='', service_type='MapServer'):
         folder = self.build_folder_string(folder)
@@ -85,11 +65,10 @@ class Api:
         new_params['password'] = password
         new_params['confirmPassword'] = password
         new_params['f'] = 'json'
-        # new_params.update(self.params)
         return self.post('{0}/createNewSite'.format(self._ags_url), new_params)
     
-    def create_default_site(self):
-        return self.create_site(self._username, self._password, self.get_default_site_params())
+    def create_default_site(self, username, password):
+        return self.create_site(username, password, self.get_default_site_params())
 
     @staticmethod
     def get_default_site_params():
@@ -140,3 +119,43 @@ class Api:
         params['token'] = self.token
         return params
 
+
+class TokenApi(BaseApi):
+    def __init__(self, ags_url, token_url, portal_url, username, password, verify_certs=False):
+        super(TokenApi, self).__init__(ags_url=ags_url, portal_url=portal_url, verify_certs=verify_certs)
+        self._token_url = token_url if token_url else ags_url + '/generateToken'
+        self._username = username
+        self._password = password
+        self._token = None
+
+    @property
+    def token(self):
+        return self._token if self._token else self.get_token()
+
+    @property
+    def params(self):
+        return {
+            'token': self.token,
+            'f': 'json'
+        }
+
+    def get_token(self):
+        params = {
+            'username': self._username,
+            'password': self._password,
+            'client': 'requestip',
+            'expiration': 60,
+            'f': 'json'
+        }
+        response = self.post(self._token_url, params)
+        self._token = response['token']
+        return self._token
+
+
+class KerberosApi(BaseApi):
+    def __init__(self, ags_url, portal_url, verify_certs=False):
+        super(KerberosApi, self).__init__(ags_url=ags_url, portal_url=portal_url, verify_certs=verify_certs)
+
+    def _request(self, request_method, url, params):
+        response = request_method(url, auth=HTTPKerberosAuth(), params=params, verify=False)
+        return self._check_response(response)

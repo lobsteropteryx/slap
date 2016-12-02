@@ -1,6 +1,6 @@
 import unittest
 from unittest import TestCase
-from slap.api import Api
+from slap.api import TokenApi
 from mock import PropertyMock, patch
 
 
@@ -8,7 +8,7 @@ class TestApi(TestCase):
     api = None
 
     def create_api(self):
-        api = Api(
+        api = TokenApi(
             ags_url='http://myserver/arcgis/admin',
             token_url=None,
             portal_url=None,
@@ -18,7 +18,7 @@ class TestApi(TestCase):
         return api
 
     def test_token_url_no_portal(self):
-        api = Api(
+        api = TokenApi(
             ags_url='http://myserver/arcgis/admin',
             token_url=None,
             portal_url=None,
@@ -28,7 +28,7 @@ class TestApi(TestCase):
         self.assertEqual(api._token_url, 'http://myserver/arcgis/admin/generateToken')
 
     def test_token_url_with_portal(self):
-        api = Api(
+        api = TokenApi(
             ags_url='http://myserver/arcgis/admin',
             token_url='foo/generateToken',
             portal_url='http://myserver/portal/sharing/rest',
@@ -43,7 +43,7 @@ class TestApi(TestCase):
         self.assertEqual(api.token, 'my_token_value')
         api._token = None
 
-    @patch.object(Api, 'get_token')
+    @patch.object(TokenApi, 'get_token')
     def test_get_token(self, mock_get_token):
         mock_get_token.return_value = 'my_new_token_value'
         api = self.create_api()
@@ -51,8 +51,8 @@ class TestApi(TestCase):
         self.assertEqual(token, 'my_new_token_value')
 
     def get_mock(self, url, method, *args):
-        with patch('slap.api.Api.token', new_callable=PropertyMock) as mock_token:
-            with patch('slap.api.Api.get') as mock_method:
+        with patch('slap.api.TokenApi.token', new_callable=PropertyMock) as mock_token:
+            with patch('slap.api.TokenApi.get') as mock_method:
                 mock_token.return_value = 'my_token_value'
                 api = self.create_api()
                 getattr(api, method)(*args)
@@ -60,8 +60,8 @@ class TestApi(TestCase):
                 mock_method.assert_called_once_with(url, {'f': 'json', 'token': 'my_token_value'})
 
     def post_mock(self, url, method, expected, *args):
-        with patch('slap.api.Api.token', new_callable=PropertyMock) as mock_token:
-            with patch('slap.api.Api.post') as mock_method:
+        with patch('slap.api.TokenApi.token', new_callable=PropertyMock) as mock_token:
+            with patch('slap.api.TokenApi.post') as mock_method:
                 mock_token.return_value = 'my_token_value'
                 api = self.create_api()
                 getattr(api, method)(*args)
