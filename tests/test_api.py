@@ -1,11 +1,13 @@
 import unittest
+import json
+import requests
+from requests import Response
 from unittest import TestCase
 from slap.api import TokenApi
 from mock import PropertyMock, patch
 
 
 class TestApi(TestCase):
-    api = None
 
     def create_api(self):
         api = TokenApi(
@@ -43,12 +45,57 @@ class TestApi(TestCase):
         self.assertEqual(api.token, 'my_token_value')
         api._token = None
 
-    @patch.object(TokenApi, 'get_token')
-    def test_get_token(self, mock_get_token):
-        mock_get_token.return_value = 'my_new_token_value'
+    def test_get_token(self):
+        with patch('slap.api.BaseApi.post') as mock_post:
+            api = self.create_api()
+            token_params = {
+                'username': api._username,
+                'password': api._password,
+                'client': 'requestip',
+                'expiration': 60,
+                'f': 'json'
+            }
+            token_value = 'my_new_token_value'
+            mock_post.return_value = {'token': token_value}
+            token = api.token
+            mock_post.assert_called_once_with(api._token_url, token_params)
+            self.assertEqual(token, token_value)
+
+    def test_get(self):
+        with patch('requests.get') as mock_request:
+            api = self.create_api()
+            url = 'my/url'
+            params = {'foo': 'bar'}
+            api.get(url=url, params=params)
+            mock_request.assert_called_once_with(url, params=params, verify=api._verify_certs)
+
+    def test_post(self):
+        with patch('requests.post') as mock_request:
+            api = self.create_api()
+            url = 'my/url'
+            params = {'foo': 'bar'}
+            api.post(url=url, params=params)
+            mock_request.assert_called_once_with(url, data=params, verify=api._verify_certs)
+
+    def test_parse_response_with_bad_return_code(self):
         api = self.create_api()
-        token = api.token
-        self.assertEqual(token, 'my_new_token_value')
+        response = Response()
+        response.status_code = 500
+        response._content = '{"status":"success"}'
+        self.assertRaises(requests.HTTPError, api.parse_response, response)
+
+    def test_check_parsed_response(self):
+        api = self.create_api()
+        response = {'status': 'error', 'messages': ['an error occurred']}
+        self.assertRaises(requests.exceptions.RequestException, api.check_parsed_response, response)
+
+    def test_check_parsed_token_response(self):
+        api = self.create_api()
+        response = {'messages': ['an error occurred']}  # no 'status'
+        try:
+            api.check_parsed_response(response)
+        except requests.exceptions.RequestException:
+            self.fail()
 
     def get_mock(self, url, method, *args):
         with patch('slap.api.TokenApi.token', new_callable=PropertyMock) as mock_token:
@@ -114,6 +161,86 @@ class TestApi(TestCase):
                        {'folderName': 'myFolder', 'serviceName': 'myService', 'f': 'json', 'token': 'my_token_value',
                         'type': 'MapServer'},
                        'myService', 'myFolder')
+
+    def test_build_params(self):
+        with patch('slap.api.TokenApi.token', new_callable=PropertyMock) as mock_token:
+            mock_token.return_value = 'my-token'
+            api = self.create_api()
+            expected = {'foo': 'bar', 'f': 'json', 'token': 'my-token'}
+            actual = api.build_params({'foo': 'bar'})
+            self.assertEqual(expected, actual)
+
+    def test_create_site(self):
+        api = self.create_api()
+        with patch('slap.api.BaseApi.post') as mock_post:
+            params = {
+                'foo': 'bar'
+            }
+            expected_params = {
+                'foo': 'bar',
+                'username': 'user',
+                'password': 'pwd',
+                'confirmPassword': 'pwd',
+                'f': 'json'
+            }
+            api.create_site(username='user', password='pwd', params=params)
+            mock_post.assert_called_once_with(api._ags_url + '/createNewSite', expected_params)
+
+    def test_create_default_site(self):
+        api = self.create_api()
+        with patch('slap.api.BaseApi.create_site') as mock_create_site:
+            api.create_default_site(username='user', password='pass')
+            mock_create_site.assert_called_once_with(api._username, api._password, api.get_default_site_params())
+
+    def test_get_default_site_params(self):
+        self.maxDiff = None
+        expected = {
+            'configStoreConnection': json.dumps({
+                'connectionString': '/home/arcgis/server/usr/config-store',
+                'type': 'FILESYSTEM'
+            }),
+            'directories': json.dumps({'directories': [
+                {
+                    'cleanupMode': 'NONE',
+                    'description': 'Stores tile caches used by map, globe, and image services for rapid performance.',
+                    'directoryType': 'CACHE',
+                    'maxFileAge': 0,
+                    'name': 'arcgiscache',
+                    'physicalPath': '/home/arcgis/server/usr/directories/arcgiscache',
+                    'virtualPath': ''},
+                {
+                    'cleanupMode': 'TIME_ELAPSED_SINCE_LAST_MODIFIED',
+                    'description': 'Stores results and other information from geoprocessing services.',
+                    'directoryType': 'JOBS',
+                    'maxFileAge': 360,
+                    'name': 'arcgisjobs',
+                    'physicalPath': '/home/arcgis/server/usr/directories/arcgisjobs',
+                    'virtualPath': ''
+                },
+                {
+                    'cleanupMode': 'TIME_ELAPSED_SINCE_LAST_MODIFIED',
+                    'description': 'Stores various information generated by services, such as map images.',
+                    'directoryType': 'OUTPUT',
+                    'maxFileAge': 10,
+                    'name': 'arcgisoutput',
+                    'physicalPath': '/home/arcgis/server/usr/directories/arcgisoutput',
+                    'virtualPath': ''
+                },
+                {
+                    'cleanupMode': 'NONE',
+                    'description': 'Stores files that are used internally by the GIS server.',
+                    'directoryType': 'SYSTEM',
+                    'maxFileAge': 0,
+                    'name': 'arcgissystem',
+                    'physicalPath': '/home/arcgis/server/usr/directories/arcgissystem',
+                    'virtualPath': ''
+                }
+            ]})
+        }
+        api = self.create_api()
+        actual = api.get_default_site_params()
+        self.assertEqual(json.loads(expected['configStoreConnection']), json.loads(actual['configStoreConnection']))
+        self.assertEqual(json.loads(expected['directories']), json.loads(actual['directories']))
 
 
 if __name__ == '__main__':
