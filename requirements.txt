@@ -1,0 +1,6 @@
+requests
+requests-kerberos
+check-manifest
+coverage
+mock
+pyfakefs
