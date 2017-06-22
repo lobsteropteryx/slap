@@ -1,5 +1,6 @@
 from slap.auth import TokenAuth
 from requests_kerberos import HTTPKerberosAuth, OPTIONAL
+from requests_ntlm import HttpNtlmAuth
 from slap.auth.types import AuthTypes
 
 
@@ -14,7 +15,7 @@ def build_auth(auth_type, username=None, password=None, token_url=None, verify_c
     elif auth_type == AuthTypes.KERBEROS:
         return HTTPKerberosAuth(mutual_authentication=OPTIONAL)
     elif auth_type == AuthTypes.NTLM:
-        raise NotImplementedError('NTLM auth is not implemented')
+        return HttpNtlmAuth(username=username, password=password)
     elif auth_type == AuthTypes.SAML:
         raise NotImplementedError('SAML auth is not implemented')
     else:

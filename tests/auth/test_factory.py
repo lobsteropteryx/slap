@@ -7,7 +7,6 @@ from slap.auth.factory import build_auth
 from slap.auth.types import AuthTypes
 
 
-
 class TestAuthFactory(TestCase):
 
     def test_builds_token_auth(self):
@@ -27,3 +26,10 @@ class TestAuthFactory(TestCase):
         with patch('slap.auth.factory.HTTPKerberosAuth') as mock:
             build_auth(AuthTypes.KERBEROS)
             mock.assert_called_once_with(mutual_authentication=OPTIONAL)
+
+    def test_builds_ntlm_auth(self):
+        with patch('slap.auth.factory.HttpNtlmAuth') as mock:
+            username = 'domain\\user'
+            password = 'pass'
+            build_auth(AuthTypes.NTLM, username=username, password=password)
+            mock.assert_called_once_with(username=username, password=password)
