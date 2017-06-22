@@ -78,6 +78,7 @@ An example configuration file might look like below.  *Note:* The comments would
 
 ```javascript
 {
+    "auth": "token", // Optional, can be "token", "kerberos", "ntlm".  Defaults to "token"
     "agsUrl": "https://myagsserver.com:6443/arcgis/admin", // Required, URL for AGS admin endpoint
     "tokenUrl": "https://myagsserver.com:6443/arcgis/tokens/generateToken", // Optional, URL for token service; defaults to AGS token endpoint
     "verifyCerts": "/path/to/certs.pem", // Optional, either True to use default store, False to not verify, or path to cert file. Defaults to False.
