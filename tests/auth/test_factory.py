@@ -33,3 +33,11 @@ class TestAuthFactory(TestCase):
             password = 'pass'
             build_auth(AuthTypes.NTLM, username=username, password=password)
             mock.assert_called_once_with(username=username, password=password)
+
+    def test_builds_saml_auth(self):
+        with self.assertRaises(NotImplementedError):
+            build_auth(AuthTypes.SAML)
+
+    def test_raises_on_invalid_auth_type(self):
+        with self.assertRaises(KeyError):
+            build_auth('made_up_auth')
