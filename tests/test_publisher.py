@@ -217,6 +217,7 @@ class TestMapServicePublisherSdDraft(TestCase):
 class TestLoadingConfig(TestCase):
 
     def test_load_config_by_path(self, mock_load_config):
+        mock_load_config.return_value = {'agsUrl': 'my/ags'}
         config_path = 'path/to/config'
         publisher = Publisher('user', 'pwd', config_path)
         publisher.config_parser.load_config.assert_called_once_with(config_path)

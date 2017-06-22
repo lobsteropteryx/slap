@@ -3,7 +3,9 @@ from past.builtins import basestring
 from builtins import object
 import os
 from slap.api import Api
+from slap.auth.factory import build_auth
 from slap.auth.token import TokenAuth
+from slap.auth.types import AuthTypes
 from slap.config import ConfigParser
 
 
@@ -17,8 +19,9 @@ class Publisher(object):
         if hostname:
             self.config['agsUrl'] = self.config_parser.update_hostname(self.config['agsUrl'], hostname)
 
-        verify_certs = self.config['verifyCerts'] if 'verifyCerts' in self.config else False
-        self.api = self.__build_api(username=username, password=password, verify_certs=verify_certs)
+        verify_certs = self.config.get('verifyCerts', False)
+        auth_type = self.config.get('auth', AuthTypes.TOKEN)
+        self.api = self._build_api(auth_type=auth_type, username=username, password=password, verify_certs=verify_certs)
 
         # This is a S-L-O-W import, so defer as long as possible
         from slap.esri import ArcpyHelper
@@ -28,19 +31,18 @@ class Publisher(object):
             ags_admin_url=self.config['agsUrl']
         )
 
-    def __build_api(self, username, password, verify_certs):
-        auth = self.__build_auth(username=username, password=password, verify_certs=verify_certs)
+    def _build_api(self, auth_type, username, password, verify_certs):
+        token_url = self.config.get('tokenUrl', self.config['agsUrl'] + '/generateToken')
+        auth = build_auth(
+            auth_type=auth_type,
+            username=username,
+            password=password,
+            token_url=token_url,
+            verify_certs=verify_certs
+        )
         return Api(
             ags_url=self.config['agsUrl'],
             auth=auth,
-            verify_certs=verify_certs
-        )
-
-    def __build_auth(self, username, password, verify_certs):
-        return TokenAuth(
-            username=username,
-            password=password,
-            token_url=self.config['tokenUrl'] if 'tokenUrl' in self.config else self.config['agsUrl'] + '/generateToken',
             verify_certs=verify_certs
         )
 
