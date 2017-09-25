@@ -6,6 +6,8 @@
 
 Command line tool for publishing map services
 
+**NOTE:** This is the current location for the `slap` source code; the project was previously maintained at [GISinc](https://github.com/gisinc), but all new updates to the codebase will be made here.
+
 ## Quick Setup
 Install from pip using `pip install slap`
 
