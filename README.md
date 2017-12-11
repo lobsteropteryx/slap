@@ -74,7 +74,7 @@ Creates a new site before publishing; useful when publishing during a docker bui
 
 ## Config files
 Configuration files are handled per-environment; for example, you might have three separate config files, `INT_config.json`, `UAT_config.json`, and `PROD_config.json`.
-Each service is included in the config file as an object, grouped by service type.  *Note*:  Currently, only map services are supported.
+Each service is included in the config file as an object, grouped by service type.
 
 An example configuration file might look like below.  *Note:* The comments would need to be removed, json is not valid with them.
 
@@ -119,17 +119,35 @@ An example configuration file might look like below.  *Note:* The comments would
                 "json": {} // Optional, specific parameters for this service only
             }
         ]
+    },
+    "gpServices": {
+        "json": {}, // Optional, specific service parameters to use for all gp services
+        "services": [
+            {
+                "input": "my_map_document.mxd", // Required, unique string to identify this entry
+                "result": "my_gp_service.rlt", // Required, path to result file,
+                "executionType", // Optional, defaults to 'Asynchronous'
+                "output": "output/", // Optional, defaults to "output/"
+                "serviceName": "MyGPService", // Optional, defaults to input value
+                "serverType": "ARCGIS_SERVER", // Optional, defaults to "ARCGIS_SERVER"
+                "copyDataToServer": "False", // Optional, defaults to False
+                "folderName": "AutomationTests", // Optional, defaults to ""
+                "summary": "Test GP service published automagically", // Optional, defaults to ""
+                "initialState": "STOPPED", // Optional, defaults to "STARTED"
+                "json": {} // Optional, specific parameters for this service only
+            }
+        ]
     }
 }
 ```
 
 ### Mixing in service parameters
-Service properties can be specified at multiple levels in the file; the most 
-specific property will be used (i.e., service level, then type level, then 
-global).  This allows for a minimum of configuration, while also allowing 
-for service parameters to vary.  Note that the `json` parameter is identical 
-what's specified in ESRI's [REST API](http://resources.arcgis.com/en/help/arcgis-rest-api/index.html#/Create_Service/02r3000001tr000000/). 
-An example of the utilizing the `json` parameter is [enabling feature access](docs/publish-feature-service.md) 
+Service properties can be specified at multiple levels in the file; the most
+specific property will be used (i.e., service level, then type level, then
+global).  This allows for a minimum of configuration, while also allowing
+for service parameters to vary.  Note that the `json` parameter is identical
+what's specified in ESRI's [REST API](http://resources.arcgis.com/en/help/arcgis-rest-api/index.html#/Create_Service/02r3000001tr000000/).
+An example of the utilizing the `json` parameter is [enabling feature access](docs/publish-feature-service.md)
 on a service.
 
 ### Replacing workspace paths
@@ -140,6 +158,7 @@ the script will replace each `old` workspace path (i.e., path to a connection fi
 There are a few artifacts that need to be generated (via ArcMap) per service and/or environment, which are required for the process to run.  These can be checked into source control if desired, and pulled down as needed.
 
 * MXD files: "Source" document for map services
+* Result files:  "Source" document for GP services
 * Database connection files: Needed per environment for publishing map services
 * Config files: Needed per environment to specify publishing parameters
 * Username/password: Credentials for publishing.  These are *not* specified in the configuration file, but are passed in at the command line.

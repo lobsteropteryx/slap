@@ -21,16 +21,16 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='3.2.0',
+    version='3.333.0',
     description='A set of scripts for publishing ESRI services',
     long_description='A set of scripts for publishing ESRI services',
 
     # The project's main homepage.
-    url='https://github.com/gisinc/slap',
+    url='https://github.com/lobsteropteryx/slap',
 
     # Author details
     author='Ian Firkin',
-    author_email='ian.firkin@gisinc.com',
+    author_email='ian.firkin@gmail.com',
 
     # Choose your license
     license='MIT',
@@ -59,7 +59,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='ESRI GISinc MapService',
+    keywords='ESRI MapService',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
