@@ -2,6 +2,7 @@ from __future__ import print_function
 from past.builtins import basestring
 from builtins import object
 import os
+import logging
 from slap.api import Api
 from slap.auth.token import TokenAuth
 from slap.config import ConfigParser
@@ -10,12 +11,16 @@ from slap.config import ConfigParser
 class Publisher(object):
 
     def __init__(self, username, password, config, hostname=None):
+        self.logger = logging.getLogger(__name__)
+
         self.config_parser = ConfigParser()
         self.config = self.config_parser.load_config(config) if isinstance(config, basestring) else config
 
         # Allow the user to specify a host as an argument, in case it's set dynamically
         if hostname:
             self.config['agsUrl'] = self.config_parser.update_hostname(self.config['agsUrl'], hostname)
+
+        self.logger.debug(self.config)
 
         verify_certs = self.config['verifyCerts'] if 'verifyCerts' in self.config else False
         self.api = self.__build_api(username=username, password=password, verify_certs=verify_certs)
@@ -82,11 +87,13 @@ class Publisher(object):
             self._get_publishing_params_from_config(config_entry)
         filename, sddraft, sd = self._get_service_definition_paths(input_path, output_path)
 
-        self.message("Publishing " + input_path)
+        self.logger.info("Publishing " + input_path)
         analysis = self._get_method_by_service_type(service_type)(config_entry, filename, sddraft)
+        self.logger.debug(analysis)
+
         if self.analysis_successful(analysis['errors']):  # This may throw an exception
             self.publish_sd_draft(sddraft, sd, service_name, folder_name, initial_state, json)
-            self.message(input_path + " published successfully")
+            self.logger.info(input_path + " published successfully")
 
     def _get_publishing_params_from_config(self, config_entry):
         input_path = config_entry['input']
@@ -138,7 +145,7 @@ class Publisher(object):
     def delete_service(self, service_name, folder_name=None):
         service_exists = self.api.service_exists(service_name=service_name, folder=folder_name)
         if service_exists['exists']:
-            self.message("Deleting old service...")
+            self.logger.info("Deleting old service...")
             self.api.delete_service(service_name=service_name, folder=folder_name)
 
     def update_service(self, service_name, folder_name=None, json=None):
@@ -149,10 +156,6 @@ class Publisher(object):
     def register_data_sources(self):
         if "dataSources" in self.config:
             self.arcpy_helper.register_data_sources(self.config["dataSources"])
-
-    @staticmethod
-    def message(message):
-        print(message)
 
 
 

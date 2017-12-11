@@ -2,6 +2,7 @@ from __future__ import print_function
 from builtins import object
 import arcpy
 import os
+import logging
 
 
 class ArcpyHelper(object):
@@ -19,6 +20,8 @@ class ArcpyHelper(object):
             ags_admin_url,
             connection_file_name
         )
+
+        self.logger = logging.getLogger(__name__)
 
     @property
     def cwd(self):
@@ -124,6 +127,8 @@ class ArcpyHelper(object):
         return arcpy.mapping.MapDocument(full_mxd_path)
 
     def publish_gp(self, config_entry, filename, sddraft):
+        self.logger.debug(config_entry)
+
         if "result" in config_entry:
             result = self.get_full_path(config_entry["result"])
         else:
@@ -152,6 +157,8 @@ class ArcpyHelper(object):
         return arcpy.mapping.AnalyzeForSD(sddraft)
 
     def publish_mxd(self, config_entry, filename, sddraft):
+        self.logger.debug(config_entry)
+
         if "workspaces" in config_entry:
             self.set_workspaces(config_entry["input"], config_entry["workspaces"])
 
@@ -170,6 +177,8 @@ class ArcpyHelper(object):
         return arcpy.mapping.AnalyzeForSD(sddraft)
 
     def publish_image_service(self, config_entry, filename, sddraft):
+        self.logger.debug(config_entry)
+
         arcpy.CreateImageSDDraft(
             raster_or_mosaic_layer=config_entry["input"],
             out_sddraft=sddraft,
